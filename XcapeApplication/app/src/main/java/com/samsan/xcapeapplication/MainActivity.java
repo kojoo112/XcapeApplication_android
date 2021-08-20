@@ -54,11 +54,13 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     String targetKey = editText.getText().toString();
-
                     for (HintVO hintVO : hintVOList) {
                         if (targetKey.equals(hintVO.getKey())) {
                             textView1.setText(hintVO.getMessage1());
                             textView2.setText(hintVO.getMessage2());
+                            break;
+                        } else {
+                            Toast.makeText(MainActivity.this, "힌트코드를 확인해주세요. 🙅‍♂️", Toast.LENGTH_SHORT).show();
                         }
                     }
 

@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.samsan.xcapeapplication.util.XcapeConstant;
 import com.samsan.xcapeapplication.vo.HintVO;
 import com.samsan.xcapeapplication.vo.MerchantVO;
@@ -39,14 +40,15 @@ public class SubActivity extends AppCompatActivity {
     ArrayAdapter<String> merchantAdapter;
     ArrayAdapter<String> themeAdapter;
 
-    ArrayList<String> merchantCodeList = new ArrayList<>();
-    ArrayList<String> merchantNameList = new ArrayList<>();
-    ArrayList<String> themeCodeList = new ArrayList<>();
-    ArrayList<String> themeNameList = new ArrayList<>();
-    ArrayList<HintVO> hintList = new ArrayList<>();
+    ArrayList<String> merchantCodeList;
+    ArrayList<String> merchantNameList;
+    ArrayList<String> themeCodeList;
+    ArrayList<String> themeNameList;
+
+    int selectedMerchantPosition;
+    int selectedThemePosition;
 
 //    ArrayList<MerchantVO> merchantVOS = new ArrayList<>();
-
     String merchantCode;
     String themeCode;
     String themeName;
@@ -59,68 +61,92 @@ public class SubActivity extends AppCompatActivity {
         merchantSpinner = findViewById(R.id.merchantSpinner);
         themeSpinner = findViewById(R.id.themeSpinner);
 
-//        SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
-//        preferences.getString(XcapeConstant.MERCHANT_CODE_LIST, "");
-//        preferences.getString(XcapeConstant.THEME_CODE_LIST, "");
-//        preferences.getString(XcapeConstant.MERCHANT_NAME_LIST, "");
-//        preferences.getString(XcapeConstant.THEME_NAME_LIST, "");
+        Gson gson = new Gson();
+        SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
+        merchantCodeList = gson.fromJson(preferences.getString(XcapeConstant.MERCHANT_CODE_LIST, String.valueOf(new ArrayList<>())), new TypeToken<ArrayList<String>>(){}.getType());
+        merchantNameList = gson.fromJson(preferences.getString(XcapeConstant.MERCHANT_NAME_LIST, String.valueOf(new ArrayList<>())), new TypeToken<ArrayList<String>>(){}.getType());
+        themeCodeList = gson.fromJson(preferences.getString(XcapeConstant.THEME_CODE_LIST, String.valueOf(new ArrayList<>())), new TypeToken<ArrayList<String>>(){}.getType());
+        themeNameList = gson.fromJson(preferences.getString(XcapeConstant.THEME_NAME_LIST, String.valueOf(new ArrayList<>())), new TypeToken<ArrayList<String>>(){}.getType());
+        selectedMerchantPosition = preferences.getInt(XcapeConstant.SELECTED_MERCHANT_POSITION, 0);
+        selectedThemePosition = preferences.getInt(XcapeConstant.SELECTED_THEME_POSITION, 0);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.clear();
         /**
          *  getMerchantList
          */
-        Call<List<MerchantVO>> callMerchant = getApiService().getMerchantList();
-        callMerchant.enqueue(new Callback<List<MerchantVO>>() {
-            @Override
-            public void onResponse(Call<List<MerchantVO>> call, Response<List<MerchantVO>> response) {
-                Log.d(TAG, "onResponse: " + response.body());
-                Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>... response 받는 시점");
-                for(MerchantVO merchantVO : response.body()) {
-//                    merchantVOS.add(merchantVO);
-                    merchantCodeList.add(merchantVO.getMerchant().getMerchantCode());
-                    merchantNameList.add(merchantVO.getMerchant().getMerchantName());
+        if(merchantCodeList.isEmpty()) {
+            Call<List<MerchantVO>> callMerchant = getApiService().getMerchantList();
+            callMerchant.enqueue(new Callback<List<MerchantVO>>() {
+                @Override
+                public void onResponse(Call<List<MerchantVO>> call, Response<List<MerchantVO>> response) {
+                    for (MerchantVO merchantVO : response.body()) {
+                        merchantCodeList.add(merchantVO.getMerchant().getMerchantCode());
+                        merchantNameList.add(merchantVO.getMerchant().getMerchantName());
+                    }
+
+                    SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    Gson gson = new Gson();
+                    editor.putString(XcapeConstant.MERCHANT_CODE_LIST, gson.toJson(merchantCodeList));
+                    editor.putString(XcapeConstant.MERCHANT_NAME_LIST, gson.toJson(merchantNameList));
+                    editor.commit();
+
+                    responseToMerchantSpinner();
                 }
-                responseToMerchantSpinner();
-            }
 
-            @Override
-            public void onFailure(Call<List<MerchantVO>> call, Throwable t) {
-                Log.d(TAG, "onFailure: " + t.getMessage());
-            }
-        });
+                @Override
+                public void onFailure(Call<List<MerchantVO>> call, Throwable t) {
+                    Log.d(TAG, "onFailure: " + t.getMessage());
+                }
+            });
 
-        /**
-         *  getThemeList
-         */
-        merchantSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                merchantCode = merchantCodeList.get(position);
-                Toast.makeText(getApplicationContext(), merchantCode, Toast.LENGTH_SHORT).show();
-                Call<List<ThemeVO>> callTheme = getApiService().getThemeList(merchantCode);
-                callTheme.enqueue(new Callback<List<ThemeVO>>() {
-                    @Override
-                    public void onResponse(Call<List<ThemeVO>> call, Response<List<ThemeVO>> response) {
-                        themeNameList.clear();
-                        themeCodeList.clear();
-                        for(ThemeVO themeVO : response.body()) {
-                            themeCodeList.add(themeVO.getThemeCode());
-                            themeNameList.add(themeVO.getThemeName());
+        } else {
+            responseToMerchantSpinner();
+            responseToThemeSpinner();
+        }
+            /**
+             *  getThemeList
+             */
+            merchantSpinner.setSelection(selectedMerchantPosition);
+            merchantSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    merchantCode = merchantCodeList.get(position);
+                    ///////////////// 여기서 SharedPreference
+                    Call<List<ThemeVO>> callTheme = getApiService().getThemeList(merchantCode);
+                    callTheme.enqueue(new Callback<List<ThemeVO>>() {
+                        @Override
+                        public void onResponse(Call<List<ThemeVO>> call, Response<List<ThemeVO>> response) {
+                            themeNameList.clear();
+                            themeCodeList.clear();
+                            for (ThemeVO themeVO : response.body()) {
+                                themeCodeList.add(themeVO.getThemeCode());
+                                themeNameList.add(themeVO.getThemeName());
+                            }
+
+                            SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            Gson gson = new Gson();
+                            editor.putInt(XcapeConstant.SELECTED_MERCHANT_POSITION, position);
+                            editor.putString(XcapeConstant.THEME_CODE_LIST, gson.toJson(themeCodeList));
+                            editor.putString(XcapeConstant.THEME_NAME_LIST, gson.toJson(themeNameList));
+                            editor.commit();
+
+                            responseToThemeSpinner();
                         }
-                        responseToThemeSpinner();
-                    }
 
-                    @Override
-                    public void onFailure(Call<List<ThemeVO>> call, Throwable t) {
-                        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> getThemeList FAIL!!!!! " + t.getMessage());
-                    }
-                });
-            }
+                        @Override
+                        public void onFailure(Call<List<ThemeVO>> call, Throwable t) {
+                            Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> getThemeList FAIL!!!!! " + t.getMessage());
+                        }
+                    });
+                }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
 
-            }
-        });
-
+                }
+            });
         /**
          *  button clickEvent
          */
@@ -132,11 +158,7 @@ public class SubActivity extends AppCompatActivity {
                 callHintList.enqueue(new Callback<List<HintVO>>() {
                     @Override
                     public void onResponse(Call<List<HintVO>> call, Response<List<HintVO>> response) {
-                        hintList.clear();
                         textView.setText("");
-                        for(HintVO hintVO : response.body()) {
-                            hintList.add(hintVO);
-                        }
                         Gson gson = new Gson();
                         SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
@@ -164,12 +186,16 @@ public class SubActivity extends AppCompatActivity {
     private void responseToThemeSpinner() {
         themeAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, themeNameList);
         themeSpinner.setAdapter(themeAdapter);
+        themeSpinner.setSelection(selectedThemePosition);
         themeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 themeCode = themeCodeList.get(position);
                 themeName = themeNameList.get(position);
-                Toast.makeText(getApplicationContext(), themeCode, Toast.LENGTH_SHORT);
+                SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putInt(XcapeConstant.SELECTED_THEME_POSITION, position);
+                editor.commit();
             }
 
             @Override
