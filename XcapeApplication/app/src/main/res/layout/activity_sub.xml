@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    tools:context=".SubActivity">
+
+    <Spinner
+        android:layout_marginTop="10dp"
+        android:id="@+id/merchantSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:spinnerMode="dropdown"
+        android:background="#F7A7BB"
+        />
+
+    <Spinner
+        android:layout_marginTop="10dp"
+        android:background="#F7A7BB"
+        android:id="@+id/themeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:spinnerMode="dropdown"
+        />
+
+    <Button
+        android:id="@+id/getHintListButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/cardview_dark_background"
+        android:text="저장" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="TextView"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>

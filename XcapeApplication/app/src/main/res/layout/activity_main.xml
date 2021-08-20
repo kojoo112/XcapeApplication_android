@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/searchWithKey"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/searchWithKeyButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="조회" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/message1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:text="message1" />
+
+    <TextView
+        android:id="@+id/message2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:text="message2" />
+
+</LinearLayout>
