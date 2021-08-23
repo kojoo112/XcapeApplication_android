@@ -1,6 +1,7 @@
 package com.samsan.xcapeapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,7 +13,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -33,9 +33,9 @@ import static com.samsan.xcapeapplication.retrofit.RetrofitClient.getApiService;
 
 public class SubActivity extends AppCompatActivity {
 
-    TextView textView;
     Spinner merchantSpinner;
     Spinner themeSpinner;
+    Toolbar subToolbar;
 
     ArrayAdapter<String> merchantAdapter;
     ArrayAdapter<String> themeAdapter;
@@ -48,7 +48,6 @@ public class SubActivity extends AppCompatActivity {
     int selectedMerchantPosition;
     int selectedThemePosition;
 
-//    ArrayList<MerchantVO> merchantVOS = new ArrayList<>();
     String merchantCode;
     String themeCode;
     String themeName;
@@ -57,9 +56,13 @@ public class SubActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sub);
-        textView = findViewById(R.id.textView);
+
         merchantSpinner = findViewById(R.id.merchantSpinner);
         themeSpinner = findViewById(R.id.themeSpinner);
+
+        subToolbar = findViewById(R.id.subToolbar);
+        setSupportActionBar(subToolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         Gson gson = new Gson();
         SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
@@ -69,8 +72,9 @@ public class SubActivity extends AppCompatActivity {
         themeNameList = gson.fromJson(preferences.getString(XcapeConstant.THEME_NAME_LIST, String.valueOf(new ArrayList<>())), new TypeToken<ArrayList<String>>(){}.getType());
         selectedMerchantPosition = preferences.getInt(XcapeConstant.SELECTED_MERCHANT_POSITION, 0);
         selectedThemePosition = preferences.getInt(XcapeConstant.SELECTED_THEME_POSITION, 0);
-        SharedPreferences.Editor editor = preferences.edit();
-        editor.clear();
+
+
+
         /**
          *  getMerchantList
          */
@@ -112,7 +116,6 @@ public class SubActivity extends AppCompatActivity {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     merchantCode = merchantCodeList.get(position);
-                    ///////////////// 여기서 SharedPreference
                     Call<List<ThemeVO>> callTheme = getApiService().getThemeList(merchantCode);
                     callTheme.enqueue(new Callback<List<ThemeVO>>() {
                         @Override
@@ -128,6 +131,8 @@ public class SubActivity extends AppCompatActivity {
                             SharedPreferences.Editor editor = preferences.edit();
                             Gson gson = new Gson();
                             editor.putInt(XcapeConstant.SELECTED_MERCHANT_POSITION, position);
+                            // merchant가 바뀌었을땐 themePostion을 0으로 초기화
+                            selectedThemePosition = 0;
                             editor.putString(XcapeConstant.THEME_CODE_LIST, gson.toJson(themeCodeList));
                             editor.putString(XcapeConstant.THEME_NAME_LIST, gson.toJson(themeNameList));
                             editor.commit();
@@ -158,12 +163,12 @@ public class SubActivity extends AppCompatActivity {
                 callHintList.enqueue(new Callback<List<HintVO>>() {
                     @Override
                     public void onResponse(Call<List<HintVO>> call, Response<List<HintVO>> response) {
-                        textView.setText("");
                         Gson gson = new Gson();
                         SharedPreferences preferences = getSharedPreferences(XcapeConstant.DATA, MODE_PRIVATE);
                         SharedPreferences.Editor editor = preferences.edit();
                         editor.putString(XcapeConstant.HINT_LIST, gson.toJson(response.body()));
                         editor.putString(XcapeConstant.THEME_NAME, themeName);
+                        editor.putInt(XcapeConstant.HINT_COUNT, 0);
                         editor.commit();
 
                         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
@@ -184,7 +189,8 @@ public class SubActivity extends AppCompatActivity {
     }   // onCreate 끝 지점
 
     private void responseToThemeSpinner() {
-        themeAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, themeNameList);
+        themeAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, themeNameList);
+        themeAdapter.setDropDownViewResource(R.layout.spinner_on_click_item);
         themeSpinner.setAdapter(themeAdapter);
         themeSpinner.setSelection(selectedThemePosition);
         themeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -206,7 +212,8 @@ public class SubActivity extends AppCompatActivity {
     }
 
     private void responseToMerchantSpinner() {
-        merchantAdapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, merchantNameList);
+        merchantAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, merchantNameList);
+        merchantAdapter.setDropDownViewResource(R.layout.spinner_on_click_item);
         merchantSpinner.setAdapter(merchantAdapter);
     }
 }
