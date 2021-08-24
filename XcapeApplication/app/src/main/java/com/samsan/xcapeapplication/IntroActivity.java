@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class IntroActivity extends AppCompatActivity {
@@ -22,7 +23,7 @@ public class IntroActivity extends AppCompatActivity {
                 startActivity(intent); //인트로 실행 후 바로 MainActivity로 넘어감.
                 finish();
             }
-        }, 2000);
+        }, 1000);
 
     }
 

@@ -26,6 +26,9 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@drawable/search_text_radius"
+            android:imeOptions="actionSearch"
+            android:inputType="textCapCharacters"
+            android:maxLines="1"
             android:paddingLeft="15dp"
             android:textColor="@color/white"
             android:textStyle="bold" />

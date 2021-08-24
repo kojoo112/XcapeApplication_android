@@ -11,8 +11,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.method.PasswordTransformationMethod;
+import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -25,15 +27,16 @@ import com.samsan.xcapeapplication.util.XcapeConstant;
 import com.samsan.xcapeapplication.vo.HintVO;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     Toolbar mainToolbar;
 
-    EditText editText;
+    EditText inputHintKey;
 
-    TextView textView1;
-    TextView textView2;
+    TextView message1;
+    TextView message2;
     TextView toolbarTitle;
     TextView hintCountText;
     LinearLayout linearLayout;
@@ -41,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     String strMessage2 = "";
     String recentlyHintKey = "";
     int hintCount = 0;
+
+    boolean isHintKey = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,13 +58,20 @@ public class MainActivity extends AppCompatActivity {
 
         hintCountText = findViewById(R.id.hintCount);
         hintCountText.setText(String.valueOf(hintCount));
+        hintCountText.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                inputPasswordAlert(MainActivity.this);
+                return true;
+            }
+        });
 
         linearLayout = findViewById(R.id.hintCountLayout);
         linearLayout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 inputPasswordAlert(MainActivity.this);
-                return false;
+                return true;
             }
         });
 
@@ -76,15 +88,15 @@ public class MainActivity extends AppCompatActivity {
         toolbarTitle.setText(themeName);
 
         ArrayList<HintVO> hintVOList;
-        editText = findViewById(R.id.searchWithKey);
-        textView1 = findViewById(R.id.message1);
-        textView2 = findViewById(R.id.message2);
+        inputHintKey = findViewById(R.id.searchWithKey);
+        message1 = findViewById(R.id.message1);
+        message2 = findViewById(R.id.message2);
         String msg = "🔒 터치하면 정답이 보입니다.";
 
-        textView2.setOnClickListener(new View.OnClickListener() {
+        message2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!strMessage2.isEmpty() && !strMessage2.equals(textView2.getText().toString())) {
+                if (!strMessage2.isEmpty() && !strMessage2.equals(message2.getText().toString())) {
                     AlertDialog.Builder alertBuilder = new AlertDialog.Builder(MainActivity.this);
                     alertBuilder.setTitle("정답");
                     alertBuilder.setMessage("지금 확인하시겠습니까?");
@@ -92,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (!strMessage2.isEmpty()) {
-                                textView2.setText(strMessage2);
+                                message2.setText(strMessage2);
                             }
                         }
                     });
@@ -111,26 +123,24 @@ public class MainActivity extends AppCompatActivity {
         if (!hintListInString.isEmpty()) {
             Gson gson = new Gson();
             hintVOList = gson.fromJson(hintListInString, new TypeToken<ArrayList<HintVO>>() {}.getType());
+
+            inputHintKey.setOnKeyListener(new View.OnKeyListener() {
+                @Override
+                public boolean onKey(View v, int keyCode, KeyEvent event) {
+                    if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                        searchHint(hintVOList);
+
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
+
             searchButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String targetKey = editText.getText().toString();
-                    if (!targetKey.equals(recentlyHintKey)) {
-                        for (HintVO hintVO : hintVOList) {
-                            if (targetKey.equals(hintVO.getKey())) {
-                                textView1.setText(hintVO.getMessage1());
-                                strMessage2 = hintVO.getMessage2();
-                                hintCount++;
-                                hintCountText.setText(String.valueOf(hintCount));
-                                recentlyHintKey = targetKey;
-                                break;
-                            }
-                        }
-                        if (strMessage2.isEmpty()) {
-                            Toast.makeText(MainActivity.this, "힌트 코드를 확인해주세요. 🙅‍♂️", Toast.LENGTH_SHORT).show();
-                        }
-
-                    }
+                    searchHint(hintVOList);
                 }
             });
 
@@ -144,6 +154,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void searchHint(List<HintVO> hintVOList) {
+        String targetKey = inputHintKey.getText().toString();
+        if (!targetKey.equals(recentlyHintKey)) {
+            for (HintVO hintVO : hintVOList) {
+                if (targetKey.equals(hintVO.getKey())) {
+                    message1.setText(hintVO.getMessage1());
+                    strMessage2 = hintVO.getMessage2();
+                    hintCount++;
+                    hintCountText.setText(String.valueOf(hintCount));
+                    recentlyHintKey = targetKey;
+                    isHintKey = true;
+                    break;
+                }
+            }
+            if (!isHintKey) {
+                Toast.makeText(MainActivity.this, "힌트 코드를 확인해주세요. 🙅‍♂️", Toast.LENGTH_SHORT).show();
+            } else {
+                // 버튼 클릭시 키보드 내려가게
+                InputMethodManager mInputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                mInputMethodManager.hideSoftInputFromWindow(message2.getWindowToken(), 0);
+                isHintKey = false;
+            }
+        }
+    }
+
     public void settingsOnClick(Context context) {
         EditText editText = new EditText(context);
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
@@ -154,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if(!editText.getText().toString().equals("5772")){
+                if (!editText.getText().toString().equals("5772")) {
                     Toast.makeText(context, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
                 } else {
                     Intent intent = new Intent(getApplicationContext(), SubActivity.class);
@@ -172,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    public void inputPasswordAlert(Context context){
+    public void inputPasswordAlert(Context context) {
         EditText editText = new EditText(context);
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
 
@@ -182,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                if(editText.getText().toString().equals("5772")){
+                if (editText.getText().toString().equals("5772")) {
                     hintCount = 0;
                     hintCountText.setText(String.valueOf(hintCount));
                     Toast.makeText(context, "힌트가 초기화 되었습니다.", Toast.LENGTH_SHORT).show();
@@ -194,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-
             }
         });
         alertDialog.show();
