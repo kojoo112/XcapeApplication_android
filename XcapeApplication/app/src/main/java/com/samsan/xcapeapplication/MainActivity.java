@@ -9,7 +9,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 import android.view.MenuItem;
@@ -56,11 +59,15 @@ public class MainActivity extends AppCompatActivity {
         String hintListInString = preferences.getString(XcapeConstant.HINT_LIST, "");
         String themeName = preferences.getString(XcapeConstant.THEME_NAME, "");
 
+        // 진동
+        final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
         hintCountText = findViewById(R.id.hintCount);
         hintCountText.setText(String.valueOf(hintCount));
         hintCountText.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
+                vibrate(vibrator);
                 inputPasswordAlert(MainActivity.this);
                 return true;
             }
@@ -70,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         linearLayout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
+                vibrate(vibrator);
                 inputPasswordAlert(MainActivity.this);
                 return true;
             }
@@ -97,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!strMessage2.isEmpty() && !strMessage2.equals(message2.getText().toString())) {
+                    vibrate(vibrator);
                     AlertDialog.Builder alertBuilder = new AlertDialog.Builder(MainActivity.this);
                     alertBuilder.setTitle("정답");
                     alertBuilder.setMessage("지금 확인하시겠습니까?");
@@ -128,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public boolean onKey(View v, int keyCode, KeyEvent event) {
                     if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                        vibrate(vibrator);
                         searchHint(hintVOList);
 
                         return true;
@@ -140,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
             searchButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    vibrate(vibrator);
                     searchHint(hintVOList);
                 }
             });
@@ -148,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
             searchButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    vibrate(vibrator);
                     Toast.makeText(MainActivity.this, "잘못된 입력입니다.", Toast.LENGTH_SHORT).show();
                 }
             });
@@ -234,10 +246,25 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
+    public void vibrate(Vibrator vibrator) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            vibrator.vibrate(VibrationEffect.createOneShot(100, 50));
+        } else {
+            vibrator.vibrate(100);
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        final Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
         switch (item.getItemId()) {
             case android.R.id.home:
+                if (Build.VERSION.SDK_INT >= 26) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(100, 50));
+                } else {
+                    vibrator.vibrate(100);
+                }
                 settingsOnClick(MainActivity.this);
                 return true;
 
