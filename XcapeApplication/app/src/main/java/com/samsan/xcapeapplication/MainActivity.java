@@ -13,10 +13,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.text.InputType;
 import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -49,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     int hintCount = 0;
 
     boolean isHintKey = false;
+
+    String msg = "🔒 터치하면 정답이 보입니다.";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,8 +103,6 @@ public class MainActivity extends AppCompatActivity {
         inputHintKey = findViewById(R.id.searchWithKey);
         message1 = findViewById(R.id.message1);
         message2 = findViewById(R.id.message2);
-        String msg = "🔒 터치하면 정답이 보입니다.";
-
         message2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -127,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
         ImageButton searchButton = findViewById(R.id.searchWithKeyButton);
 
         if (!hintListInString.isEmpty()) {
@@ -172,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
             for (HintVO hintVO : hintVOList) {
                 if (targetKey.equals(hintVO.getKey())) {
                     message1.setText(hintVO.getMessage1());
+                    message2.setText(msg);
                     strMessage2 = hintVO.getMessage2();
                     hintCount++;
                     hintCountText.setText(String.valueOf(hintCount));
@@ -192,11 +196,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void settingsOnClick(Context context) {
-        EditText editText = new EditText(context);
-        editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
-        alertDialog.setTitle("관리자 비밀번호를 입력해주세요.");
+        EditText editText = new EditText(context);
+        // edittext 엔터키 변경
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editText.setSingleLine();
+        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+        // 확인 키 Listener
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    if (!editText.getText().toString().equals("5772")) {
+                        Toast.makeText(context, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Intent intent = new Intent(getApplicationContext(), SubActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        alertDialog.setTitle("설정하기");
+        alertDialog.setMessage("관리자 비밀번호를 입력해주세요.");
         alertDialog.setView(editText);
         alertDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
@@ -220,11 +246,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void inputPasswordAlert(Context context) {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
         EditText editText = new EditText(context);
+        // edittext 엔터키 변경
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editText.setSingleLine();
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
 
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
-        alertDialog.setTitle("관리자 비밀번호를 입력해주세요.");
+        alertDialog.setTitle("힌트 초기화");
+        alertDialog.setMessage("관리자 비밀번호를 입력해주세요.");
         alertDialog.setView(editText);
         alertDialog.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             @Override
@@ -243,7 +273,31 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
             }
         });
-        alertDialog.show();
+
+        // dismiss 를 위한 builder 제거
+        AlertDialog dialog = alertDialog.create();
+        dialog.show();
+
+        // 확인 키 Listener
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    if (editText.getText().toString().equals("5772")) {
+                        hintCount = 0;
+                        hintCountText.setText(String.valueOf(hintCount));
+                        Toast.makeText(context, "힌트가 초기화 되었습니다.", Toast.LENGTH_SHORT).show();
+                        InputMethodManager mInputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        mInputMethodManager.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+                        dialog.dismiss();
+                    } else {
+                        Toast.makeText(context, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     public void vibrate(Vibrator vibrator) {
