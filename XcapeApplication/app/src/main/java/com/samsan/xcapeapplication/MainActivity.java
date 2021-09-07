@@ -13,7 +13,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.text.InputFilter;
 import android.text.InputType;
+import android.text.Spanned;
 import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 import android.view.MenuItem;
@@ -33,6 +35,7 @@ import com.samsan.xcapeapplication.vo.HintVO;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
     boolean isHintKey = false;
 
     String msg = "🔒 터치하면 정답이 보입니다.";
+
+    ArrayList<HintVO> hintVOList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,8 +104,22 @@ public class MainActivity extends AppCompatActivity {
         toolbarTitle = findViewById(R.id.mainToolbarTitle);
         toolbarTitle.setText(themeName);
 
-        ArrayList<HintVO> hintVOList;
+        InputFilter filterAlphaNum = new InputFilter() {
+            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+                Pattern ps = Pattern.compile("^[a-zA-Z0-9]+$");
+                if (!ps.matcher(source).matches()) {
+                    return "";
+                }
+                return null;
+            }
+        };
+
         inputHintKey = findViewById(R.id.searchWithKey);
+        inputHintKey.setFilters(new InputFilter[] {
+                filterAlphaNum,
+               new InputFilter.LengthFilter(5)
+        });
+
         message1 = findViewById(R.id.message1);
         message2 = findViewById(R.id.message2);
         message2.setOnClickListener(new View.OnClickListener() {
@@ -198,7 +217,7 @@ public class MainActivity extends AppCompatActivity {
     public void settingsOnClick(Context context) {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(context);
         EditText editText = new EditText(context);
-        // edittext 엔터키 변경
+        // editText 엔터키 변경
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         editText.setSingleLine();
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -287,8 +306,16 @@ public class MainActivity extends AppCompatActivity {
                         hintCount = 0;
                         hintCountText.setText(String.valueOf(hintCount));
                         Toast.makeText(context, "힌트가 초기화 되었습니다.", Toast.LENGTH_SHORT).show();
+                        // hintCount 초기화시 메세지도 초기화
+                        inputHintKey.setText("");
+                        strMessage2 = "";
+                        message1.setText("");
+                        message2.setText(msg);
+                        recentlyHintKey = "";
+                        // 키보드 내려가게
                         InputMethodManager mInputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                         mInputMethodManager.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+                        // alertDialog 사라지게
                         dialog.dismiss();
                     } else {
                         Toast.makeText(context, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
